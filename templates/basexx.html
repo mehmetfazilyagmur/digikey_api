@@ -1,0 +1,181 @@
+<!doctype html>
+<html lang="tr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>DigiKey Ürün Arama</title>
+  <style>
+    body { font-family: Arial, Helvetica, sans-serif; margin: 20px; color:#222; }
+    header { margin-bottom: 18px; }
+    form { display:flex; gap:8px; align-items:center; }
+    input[type="text"] { padding:8px; width:320px; border:1px solid #ccc; border-radius:4px; }
+    button { padding:8px 12px; border:none; background:#0078d4; color:#fff; border-radius:4px; cursor:pointer; }
+    button:disabled { background:#9ec7f3; cursor:default; }
+    .error { color:#b00020; margin-top:10px; }
+    table { width:100%; border-collapse:collapse; margin-top:16px; }
+    th, td { text-align:left; padding:10px; border-bottom:1px solid #e6e6e6; vertical-align:top; }
+    th { background:#f7f7f7; font-weight:600; }
+    tr:hover { background:#fbfbfb; }
+    .small { font-size:0.9em; color:#555; }
+    .actions a { color:#0078d4; text-decoration:none; margin-right:8px; }
+    .detail { margin-top:18px; padding:12px; border:1px solid #eee; border-radius:6px; background:#fafafa; }
+    .variations { margin-top:8px; }
+    .badge { display:inline-block; padding:4px 8px; background:#eef6ff; color:#036; border-radius:12px; font-size:0.85em; margin-right:6px; }
+    .no-results { margin-top:16px; color:#666; }
+    @media (max-width:720px) {
+      input[type="text"] { width:100%; }
+      table, thead, tbody, th, td, tr { display:block; }
+      th { display:none; }
+      td { border:none; padding:8px 0; }
+      td::before { content: attr(data-label); font-weight:600; display:block; margin-bottom:4px; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h2>DigiKey Ürün Arama</h2>
+    <form action="{{ url_for('search') }}" method="get" role="search">
+      <input type="text" name="keyword" placeholder="Anahtar kelime girin (ör. resistor, STM32)" value="{{ request.args.get('keyword','') }}" required />
+      <button type="submit">Ara</button>
+      {% if products %}
+        <button type="button" onclick="window.location='{{ url_for('search') }}'">Yeni Arama</button>
+      {% endif %}
+    </form>
+
+    {% if error %}
+      <div class="error"><strong>Hata:</strong> {{ error }}</div>
+    {% endif %}
+  </header>
+
+  {% if products is not none and products|length == 0 %}
+    <div class="no-results">Arama için sonuç bulunamadı.</div>
+  {% endif %}
+
+  {% if products %}
+    <table aria-label="Products table">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Ürün</th>
+          <th>Üretici</th>
+          <th>Üretici Parça No</th>
+          <th>Birim Fiyat (USD)</th>
+          <th>Stok</th>
+          <th>Durum</th>
+          <th>İşlemler</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for p in products %}
+          {% set desc = p.get('Description', {}) %}
+          {% set mfg = p.get('Manufacturer', {}) %}
+          {% set status = p.get('ProductStatus', {}) %}
+          <tr>
+            <td data-label="#"> {{ loop.index }} </td>
+            <td data-label="Ürün">
+              <strong>{{ desc.get('ProductDescription','-') }}</strong>
+              <div class="small">{{ desc.get('DetailedDescription','') }}</div>
+            </td>
+            <td data-label="Üretici">{{ mfg.get('Name','-') }}</td>
+            <td data-label="Üretici Parça No">{{ p.get('ManufacturerProductNumber','-') }}</td>
+            <td data-label="Birim Fiyat">{{ p.get('UnitPrice','-') }}</td>
+            <td data-label="Stok">{{ p.get('QuantityAvailable','-') }}</td>
+            <td data-label="Durum">{{ status.get('Status','-') }}</td>
+            <td class="actions" data-label="İşlemler">
+              {% if p.get('ProductUrl') %}
+                <a href="{{ p.get('ProductUrl') }}" target="_blank" rel="noopener">DigiKey Sayfası</a>
+              {% endif %}
+              <a href="#" onclick="showDetail({{ loop.index0 }}); return false;">Detay</a>
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+
+    <div id="detailPanel" class="detail" style="display:none;">
+      <h3 id="detailTitle">Ürün Detayı</h3>
+      <div id="detailBody"></div>
+    </div>
+
+    <script>
+      // Products data for client-side detail view
+      const PRODUCTS = {{ products|tojson }};
+      function showDetail(idx) {
+        const p = PRODUCTS[idx];
+        if (!p) return;
+        const desc = p.Description || {};
+        const mfg = p.Manufacturer || {};
+        const series = p.Series || {};
+        const cls = p.Classifications || {};
+        const params = p.Parameters || [];
+        const variations = p.ProductVariations || [];
+        let html = '';
+        html += '<p><strong>Ürün Adı:</strong> ' + (desc.ProductDescription || '-') + '</p>';
+        html += '<p><strong>Detaylı Açıklama:</strong> ' + (desc.DetailedDescription || '-') + '</p>';
+        html += '<p><strong>Üretici:</strong> ' + (mfg.Name || '-') + '</p>';
+        html += '<p><strong>Üretici Parça No:</strong> ' + (p.ManufacturerProductNumber || '-') + '</p>';
+        html += '<p><strong>Birim Fiyat:</strong> ' + (p.UnitPrice || '-') + ' USD</p>';
+        html += '<p><strong>Seri:</strong> ' + (series.Name || '-') + '</p>';
+        html += '<p><strong>Stok (genel):</strong> ' + (p.QuantityAvailable || '-') + '</p>';
+        html += '<p><strong>Durum:</strong> ' + ((p.ProductStatus && p.ProductStatus.Status) || '-') + '</p>';
+
+        // Classifications
+        if (Object.keys(cls).length) {
+          html += '<h4>Uyumluluk / Sınıflandırmalar</h4>';
+          html += '<div class="small">';
+          html += '<span class="badge">RoHS: ' + (cls.RohsStatus || '-') + '</span>';
+          html += '<span class="badge">REACH: ' + (cls.ReachStatus || '-') + '</span>';
+          html += '<span class="badge">MSL: ' + (cls.MoistureSensitivityLevel || '-') + '</span>';
+          html += '</div>';
+        }
+
+        // Parameters (whitelist)
+        if (params && params.length) {
+          html += '<h4>Teknik Parametreler</h4><ul>';
+          const whitelist = new Set(["Protocol","Function","Interface","Standards","Voltage - Supply","Current - Supply","Operating Temperature","Package / Case","Supplier Device Package"]);
+          params.forEach(pv => {
+            if (whitelist.has(pv.ParameterText)) {
+              html += '<li><strong>' + pv.ParameterText + ':</strong> ' + (pv.ValueText || '-') + '</li>';
+            }
+          });
+          html += '</ul>';
+        }
+
+        // Variations
+        if (variations && variations.length) {
+          html += '<h4>Varyasyonlar</h4>';
+          variations.forEach(v => {
+            const pkg = (v.PackageType || {}).Name || 'Bilinmiyor';
+            html += '<div class="variations">';
+            html += '<p><strong>Paket Tipi:</strong> ' + pkg + ' &nbsp; <strong>DigiKey PN:</strong> ' + (v.DigiKeyProductNumber || '-') + '</p>';
+            html += '<p class="small">Tedarikçi: ' + ((v.Supplier || {}).Name || '-') + ' &nbsp; Min Sipariş: ' + (v.MinimumOrderQuantity || '-') + ' &nbsp; Stok: ' + (v.QuantityAvailableforPackageType || '-') + '</p>';
+            if (v.StandardPricing && v.StandardPricing.length) {
+              html += '<p><strong>Fiyat Kırılımları:</strong></p><ul>';
+              v.StandardPricing.forEach(pr => {
+                html += '<li>' + (pr.BreakQuantity || 'N/A') + ' -> ' + (pr.UnitPrice || 'N/A') + ' USD | ' + (pr.TotalPrice || 'N/A') + '</li>';
+              });
+              html += '</ul>';
+            }
+            html += '</div>';
+          });
+        }
+
+        // Other names and links
+        if (p.OtherNames && p.OtherNames.length) {
+          html += '<h4>Diğer İsimler</h4><ul>';
+          p.OtherNames.forEach(n => html += '<li>' + n + '</li>');
+          html += '</ul>';
+        }
+
+        if (p.DatasheetUrl) html += '<p><a href="' + p.DatasheetUrl + '" target="_blank" rel="noopener">Datasheet</a></p>';
+        if (p.PhotoUrl) html += '<p><a href="' + p.PhotoUrl + '" target="_blank" rel="noopener">Fotoğraf</a></p>';
+
+        document.getElementById('detailTitle').textContent = desc.ProductDescription || 'Ürün Detayı';
+        document.getElementById('detailBody').innerHTML = html;
+        document.getElementById('detailPanel').style.display = 'block';
+        window.scrollTo({ top: document.getElementById('detailPanel').offsetTop - 10, behavior: 'smooth' });
+      }
+    </script>
+  {% endif %}
+</body>
+</html>

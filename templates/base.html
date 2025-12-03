@@ -1,0 +1,387 @@
+<!doctype html>
+<html lang="tr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>DigiKey Ürün Arama</title>
+
+  <!-- Bootstrap 5 CSS + Bootstrap Icons -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
+
+ <style>
+    :root{
+      --brand: #03907d;
+      --brand-dark: #027a66;
+      --muted: #e6f6f3;
+      --card-bg: #ffffff;
+      --surface: rgba(255,255,255,0.06);
+      --text-on-brand: #ffffff;
+    }
+    
+    body{
+      /* üst: koyu teal, orta: açık teal, alt: çok açık mint */
+      background: linear-gradient(to bottom, #03907d 0%, #4fc7b3 50%, #eaf9f6 100%);
+      color: var(--text-on-brand);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+      margin: 0;
+      min-height: 100vh; /* sayfa sonuna kadar gradient uzansın */
+      -webkit-font-smoothing:antialiased;
+      -moz-osx-font-smoothing:grayscale;
+    }
+
+    .container{
+      max-width:1400px;
+      padding: 28px 16px;
+    }
+
+    header .brand { display:flex; align-items:center; gap:.75rem; color:var(--text-on-brand); }
+    .brand .logo {
+      width:48px; height:48px; border-radius:10px;
+      background: linear-gradient(135deg, rgba(255,255,255,0.12), rgba(255,255,255,0.06));
+      display:flex; align-items:center; justify-content:center; color:var(--text-on-brand); font-weight:700;
+      box-shadow: 0 6px 18px rgba(0,0,0,0.12);
+    }
+
+    /* Arama kartı: tek renk tema */
+    .search-card{
+      background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 12px;
+      padding: 14px;
+      display:flex;
+      gap:12px;
+      align-items:center;
+      flex-wrap:wrap;
+      box-shadow: 0 8px 30px rgba(2, 122, 102, 0.08);
+    }
+
+    .search-card .form-control{
+      background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(255,255,255,0.12);
+      color: var(--text-on-brand);
+      height:46px;
+      border-radius:8px;
+      box-shadow:none;
+    }
+    .search-card .form-control::placeholder{ color: rgba(255,255,255,0.75); }
+    .search-card .form-control:focus{
+      outline: none;
+      box-shadow: 0 0 0 4px rgba(3,144,125,0.12);
+      border-color: rgba(255,255,255,0.9);
+    }
+
+    .search-card .btn-search{
+      background: var(--text-on-brand);
+      color: var(--brand);
+      border-radius:8px;
+      padding: 10px 18px;
+      height:46px;
+      border: none;
+      font-weight:600;
+      box-shadow: 0 6px 18px rgba(0,0,0,0.12);
+    }
+    .search-card .btn-search:hover{
+      background: rgba(255, 255, 255, 1);
+      transform: translateY(-1px);
+    }
+
+    /* İçerik kartları */
+    .content-card{
+      background: #ffffff;
+      color: #0b1220;
+      border-radius: 12px;
+      padding: 12px;
+      margin-top:18px;
+      box-shadow: 0 8px 30px rgba(2,122,102,0.06);
+    }
+
+    .table-wrap{ background: transparent; border-radius:10px; overflow:hidden; }
+    table thead th{ background: #f8faf9; border-bottom:2px solid #eef2f7; color:#0b1220; }
+    .product-desc{ max-width:360px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; color:#0b1220; }
+    .small-muted{ font-size:.9rem; color:#6c757d; }
+    .badge-pkg{ background:#eef6ff; color:#034; border-radius:8px; padding:.25rem .5rem; font-size:.8rem; }
+    .best-break{ font-weight:700; color:#0b1220; }
+    .break-item{ display:flex; flex-wrap:wrap; gap:.5rem; align-items:center; color:#0b1220; }
+    .break-item .qty{ font-weight:600; }
+
+    .modal-content{ border-radius:12px; overflow:hidden; }
+    .modal-header{ border-bottom:1px solid #eef2f7; }
+    .modal-body{ background: #fff; color:#0b1220; }
+
+    /* vurgulama: adet ile eşleşen fiyat kırılımları */
+    .price-match { color: #000 !important; font-weight: 700 !important; }
+    .price-break.match { font-weight: 700; color: #000; }
+
+    @media (max-width:900px){
+      .product-desc{ max-width:200px; }
+      .desktop-only{ display:none; }
+      .search-card{ gap:8px; }
+      .search-card .form-control{ height:44px; }
+      .search-card .btn-search{ height:44px; padding:8px 12px; }
+    }
+  </style>
+
+</head>
+<body>
+  <div class="container">
+    <header class="mb-3 d-flex align-items-start justify-content-between">
+      <div class="brand">
+        <div class="logo">KOEL</div>
+        <div>
+          <h2 class="h5 mb-0" style="color:var(--text-on-brand)">DigiKey Ürün Arama</h2>
+          <div style="color:rgba(255,255,255,0.9); font-size:.95rem">Adet bazlı fiyat kırılımları ve hızlı detay görüntüleme</div>
+        </div>
+      </div>
+      <div class="text-end" style="color:rgba(255,255,255,0.85); font-size:.9rem">Tek renk tema • Mobil uyumlu</div>
+    </header>
+
+      <form action="{{ url_for('search') }}" method="get" role="search" class="search-card">
+        <div style="flex:1; min-width:220px;">
+          <label class="visually-hidden">Parça numarası</label>
+          <input type="text" name="keyword" class="form-control" placeholder="Parça numarası veya anahtar kelime" value="{{ request.args.get('keyword','') }}" required>
+        </div>
+
+        <div style="width:140px;">
+          <label class="visually-hidden">Adet</label>
+          <input type="number" min="1" name="quantity" class="form-control" placeholder="Adet (opsiyonel)" value="{{ quantity if quantity is not none else '' }}">
+        </div>
+
+        <div>
+          <button type="submit" class="btn btn-search">Ara</button>
+        </div>
+
+        {% if products %}
+          <div style="margin-left:auto;">
+            <a href="{{ url_for('search') }}" class="btn btn-outline-primary" style="border-radius:8px; color:var(--text-on-brand); border-color: rgba(255,255,255,0.12);">Yeni Arama</a>
+          </div>
+        {% endif %}
+
+        {% if error %}
+          <div class="w-100 mt-2">
+            <div class="alert alert-danger mb-0" role="alert" style="background:rgba(255,255,255,0.08); color:var(--text-on-brand); border:1px solid rgba(255,255,255,0.12)">
+              <i class="bi bi-exclamation-triangle-fill me-2"></i><strong>Hata:</strong> {{ error }}
+            </div>
+          </div>
+        {% endif %}
+      </form>
+
+    {% if products is not none and products|length == 0 %}
+      <div class="content-card">
+        <div class="alert alert-warning">Arama için sonuç bulunamadı.</div>
+      </div>
+    {% endif %}
+
+    {% if products %}
+    <div class="content-card">
+      <div class="table-wrap">
+        <table class="table table-hover align-middle">
+          <thead class="table-light">
+            <tr>
+              <th scope="col">#</th>
+              <th scope="col">Ürün No</th>
+              <th scope="col">Ürün Açıklama</th>
+              <th scope="col">Üretici</th>
+              <th scope="col">Teslim Süresi</th>
+              <th scope="col">Stok</th>
+              <!-- Yeni sütun -->
+              <th scope="col">En Uygun Kırılım</th>   <!-- YENİ -->
+              <th scope="col">Fiyat Kırılımı</th>
+              <th scope="col">Durum</th>
+              <th scope="col">İşlemler</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for p in products %}
+              {% set desc = p.get('Description', {}) %}
+              {% set mfg = p.get('Manufacturer', {}) %}
+              {% set status = p.get('ProductStatus', {}) %}
+              <tr>
+                <th scope="row">{{ loop.index }}</th>
+                <td>{{ p.get('ManufacturerProductNumber','-') }}</td>
+                <td>
+                  <div class="fw-semibold product-desc">{{ desc.get('ProductDescription','-') }}</div>
+                  <div class="small-muted">{{ desc.get('DetailedDescription','') }}</div>
+                </td>
+                <td>{{ mfg.get('Name','-') }}</td>
+                <td>{{ p.get('ManufacturerLeadWeeks','-') }} Hafta</td>
+                <td>{{ p.get('QuantityAvailable','-') }}</td>
+
+                <!-- En Uygun Kırılım hücresi -->
+                <td>
+                  {% set best = p.get('BestMatchedBreak') %}
+                  {% if best %}
+                    <div class="fw-bold text-dark">
+                      {{ best.BreakQuantity }} adet → {{ best.UnitPrice }} USD
+                    </div>
+                    <div class="small-muted">Paket Tipi: {{ best.PackageType }}</div>
+                    {% if best.VariationDigiKeyPN %}
+                      <div class="small-muted">DK PN: {{ best.VariationDigiKeyPN }}</div>
+                    {% endif %}
+                  {% else %}
+                    <span class="text-muted">—</span>
+                  {% endif %}
+                </td>
+
+                <!-- Mevcut Fiyat Kırılımı sütunu (tüm eşleşen kırılımları alt alta gösterir) -->
+                <td>
+                  {% set breaks = p.get('MatchedPriceBreaks', []) %}
+                  {% if breaks %}
+                    <div>
+                      {% for b in breaks %}
+                        <div class="mb-1">
+                          <strong class="text-dark">{{ b.BreakQuantity }} adet</strong>
+                          &nbsp;→&nbsp;
+                          <span>{{ b.UnitPrice }} USD</span>
+                          &nbsp;|&nbsp;
+                          <span class="small-muted">Paket Tipi: {{ b.PackageType }}</span>
+                        </div>
+                      {% endfor %}
+                    </div>
+                  {% else %}
+                    <span class="text-muted">—</span>
+                  {% endif %}
+                </td>
+
+                <td>{{ status.get('Status','-') }}</td>
+                <td>
+                  {% if p.get('ProductUrl') %}
+                    <a href="{{ p.get('ProductUrl') }}" target="_blank" rel="noopener" class="btn btn-sm btn-outline-primary mb-1">DigiKey</a>
+                  {% endif %}
+                  <button type="button" class="btn btn-sm btn-outline-secondary mb-1" data-bs-toggle="modal" data-bs-target="#productModal" data-idx="{{ loop.index0 }}">Detay</button>
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Modal Ürün Detayı -->
+      <div class="modal fade" id="productModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-scrollable">
+          <div class="modal-content">
+            <div class="modal-header">
+              <h5 id="modalTitle" class="modal-title">Ürün Detayı</h5>
+              <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Kapat"></button>
+            </div>
+            <div class="modal-body">
+              <div id="modalBody">Yükleniyor...</div>
+            </div>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Kapat</button>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Client side ürün verisi -->
+      <script>
+        const PRODUCTS = {{ products|tojson }};
+        const REQUESTED_QTY = {{ quantity if quantity is not none else 'null' }};
+        const whitelist = new Set(["Protocol","Function","Interface","Standards","Voltage - Supply","Current - Supply","Operating Temperature","Package / Case","Supplier Device Package"]);
+
+        // Modal gösterilirken detay ve kırılımları render et
+        const productModal = document.getElementById('productModal');
+        productModal.addEventListener('show.bs.modal', function (event) {
+          const button = event.relatedTarget;
+          const idx = parseInt(button.getAttribute('data-idx'), 10);
+          const p = PRODUCTS[idx];
+          if (!p) return;
+          const desc = p.Description || {};
+          const mfg = p.Manufacturer || {};
+          const series = p.Series || {};
+          const cls = p.Classifications || {};
+          const params = p.Parameters || [];
+          const variations = p.ProductVariations || [];
+
+          let html = '';
+          html += `<p><strong>Ürün Adı:</strong> ${desc.ProductDescription || '-'}</p>`;
+          html += `<p><strong>Detaylı Açıklama:</strong> ${desc.DetailedDescription || '-'}</p>`;
+          html += `<p><strong>Üretici:</strong> ${mfg.Name || '-'}</p>`;
+          html += `<p><strong>Üretici Parça No:</strong> ${p.ManufacturerProductNumber || '-'}</p>`;
+          html += `<p><strong>Birim Fiyat:</strong> ${p.UnitPrice || '-'} USD</p>`;
+          html += `<p><strong>Teslim Süresi:</strong> ${p.ManufacturerLeadWeeks || '-'} Hafta</p>`;
+          html += `<p><strong>Seri:</strong> ${series.Name || '-'}</p>`;
+          html += `<p><strong>Stok (genel):</strong> ${p.QuantityAvailable || '-'}</p>`;
+          html += `<p><strong>Durum:</strong> ${(p.ProductStatus && p.ProductStatus.Status) || '-'}</p>`;
+
+          if (Object.keys(cls).length) {
+            html += '<hr><h6>Uyumluluk / Sınıflandırmalar</h6>';
+            html += `<div class="mb-2"><span class="badge bg-info text-dark badge-field">RoHS: ${cls.RohsStatus || '-'}</span>`;
+            html += `<span class="badge bg-info text-dark badge-field">REACH: ${cls.ReachStatus || '-'}</span>`;
+            html += `<span class="badge bg-info text-dark badge-field">MSL: ${cls.MoistureSensitivityLevel || '-'}</span></div>`;
+          }
+
+          if (params && params.length) {
+            html += '<hr><h6>Teknik Parametreler</h6><ul>';
+            params.forEach(pr => {
+              if (whitelist.has(pr.ParameterText)) {
+                html += `<li><strong>${pr.ParameterText}:</strong> ${pr.ValueText || '-'}</li>`;
+              }
+            });
+            html += '</ul>';
+          }
+
+          if (variations && variations.length) {
+            html += '<hr><h6>Varyasyonlar</h6>';
+            variations.forEach(v => {
+              const pkg = (v.PackageType || {}).Name || 'Bilinmiyor';
+              html += `<div class="mb-2"><strong>Paket Tipi:</strong> ${pkg} &nbsp; <strong>DigiKey PN:</strong> ${v.DigiKeyProductNumber || '-'}`;
+              html += `<div class="small-muted">Tedarikçi: ${((v.Supplier||{}).Name||'-')} &nbsp; Min Sipariş: ${v.MinimumOrderQuantity||'-'} &nbsp; Stok: ${v.QuantityAvailableforPackageType||'-'}</div>`;
+
+              // Fiyat kırılımları
+              if (v.StandardPricing && v.StandardPricing.length) {
+                // Sort by BreakQuantity ascending
+                const pricing = v.StandardPricing.slice().sort((a,b) => (a.BreakQuantity||0) - (b.BreakQuantity||0));
+                html += '<div class="mt-1"><strong>Fiyat Kırılımları:</strong><ul>';
+                // Determine matching break index if REQUESTED_QTY provided
+                let matchIndex = -1;
+                if (REQUESTED_QTY !== null) {
+                  for (let i = 0; i < pricing.length; i++) {
+                    const bq = parseInt(pricing[i].BreakQuantity || 0, 10);
+                    if (!isNaN(bq) && bq <= REQUESTED_QTY) {
+                      matchIndex = i; // keep last <= qty
+                    }
+                  }
+                }
+                pricing.forEach((pr, i) => {
+                  const bq = pr.BreakQuantity || 'N/A';
+                  const up = pr.UnitPrice || 'N/A';
+                  const tp = pr.TotalPrice || 'N/A';
+                  const clsName = (REQUESTED_QTY !== null && i === matchIndex) ? 'price-break match' : 'price-break';
+                  html += `<li class="${clsName}">${bq} -> ${up} USD | ${tp}</li>`;
+                });
+                html += '</ul></div>';
+              }
+
+              html += '</div>';
+            });
+          }
+
+          if (p.OtherNames && p.OtherNames.length) {
+            html += '<hr><h6>Diğer İsimler</h6><ul>';
+            p.OtherNames.forEach(n => html += `<li>${n}</li>`);
+            html += '</ul>';
+          }
+
+          if (p.DatasheetUrl) html += `<p><a href="${p.DatasheetUrl}" target="_blank" rel="noopener">Datasheet</a></p>`;
+          if (p.PhotoUrl) html += `<p><a href="${p.PhotoUrl}" target="_blank" rel="noopener">Fotoğraf</a></p>`;
+
+          document.getElementById('modalTitle').textContent = desc.ProductDescription || 'Ürün Detayı';
+          document.getElementById('modalBody').innerHTML = html;
+        });
+
+        // Ayrıca tablo içinde hızlı bir gösterim isterseniz: (opsiyonel)
+        // Her ürün satırına tıklanınca modal açılıyor; modal içindeki kırılımlar vurgulanır.
+      </script>
+      <style>
+        .small-muted { font-size: .9rem; color: #6c757d; }
+        .fw-bold { font-weight: 700; }
+      </style>
+
+      <!-- Bootstrap 5 JS -->
+      <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    {% endif %}
+  </div>
+</body>
+</html>
