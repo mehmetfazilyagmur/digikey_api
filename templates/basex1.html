@@ -9,29 +9,28 @@
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
   <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
 
- <style>
+  <style>
     :root{
-      --brand: #03907d;
+      --brand: #03907d;        /* ana renk */
       --brand-dark: #027a66;
       --muted: #e6f6f3;
       --card-bg: #ffffff;
       --surface: rgba(255,255,255,0.06);
       --text-on-brand: #ffffff;
     }
-    
+
+    /* Sayfa arka planı tek renk degrade yerine düz teal */
     body{
-      /* üst: koyu teal, orta: açık teal, alt: çok açık mint */
-      background: linear-gradient(to bottom, #03907d 0%, #4fc7b3 50%, #eaf9f6 100%);
+      background: linear-gradient(180deg, var(--brand) 0%, var(--brand-dark) 100%);
       color: var(--text-on-brand);
       font-family: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
       margin: 0;
-      min-height: 100vh; /* sayfa sonuna kadar gradient uzansın */
       -webkit-font-smoothing:antialiased;
       -moz-osx-font-smoothing:grayscale;
     }
 
     .container{
-      max-width:1400px;
+      max-width:1200px;
       padding: 28px 16px;
     }
 
@@ -43,7 +42,7 @@
       box-shadow: 0 6px 18px rgba(0,0,0,0.12);
     }
 
-    /* Arama kartı: tek renk tema */
+    /* Arama kartı: beyaz içerik alanı, rounded, gölge */
     .search-card{
       background: rgba(255,255,255,0.06);
       border: 1px solid rgba(255,255,255,0.08);
@@ -82,11 +81,11 @@
       box-shadow: 0 6px 18px rgba(0,0,0,0.12);
     }
     .search-card .btn-search:hover{
-      background: rgba(255, 255, 255, 1);
+      background: #ffffff;
       transform: translateY(-1px);
     }
 
-    /* İçerik kartları */
+    /* Tablo ve kartlar için nötr beyaz arka plan (içerik kutuları) */
     .content-card{
       background: #ffffff;
       color: #0b1220;
@@ -105,13 +104,13 @@
     .break-item{ display:flex; flex-wrap:wrap; gap:.5rem; align-items:center; color:#0b1220; }
     .break-item .qty{ font-weight:600; }
 
+    /* Detay modal içeriği */
     .modal-content{ border-radius:12px; overflow:hidden; }
     .modal-header{ border-bottom:1px solid #eef2f7; }
     .modal-body{ background: #fff; color:#0b1220; }
 
     /* vurgulama: adet ile eşleşen fiyat kırılımları */
     .price-match { color: #000 !important; font-weight: 700 !important; }
-    .price-break.match { font-weight: 700; color: #000; }
 
     @media (max-width:900px){
       .product-desc{ max-width:200px; }
@@ -120,115 +119,57 @@
       .search-card .form-control{ height:44px; }
       .search-card .btn-search{ height:44px; padding:8px 12px; }
     }
-
-    /* Fiyat Merdiveni Stili - Görseldeki gibi */
-    .price-ladder {
-        font-family: 'Consolas', 'Monaco', monospace; /* Rakamların alt alta hizalı durması için */
-        font-size: 0.9rem;
-        line-height: 1.4;
-    }
-    .price-row {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-    }
-    .price-val {
-        font-weight: 700; /* Fiyat koyu */
-        color: #2c3e50;
-        min-width: 60px; /* Hizalama için */
-    }
-    .qty-val {
-        color: #6c757d; /* Adet gri */
-        font-weight: 400;
-    }
   </style>
 
 </head>
 <body>
   <div class="container">
-    <header class="mb-3 d-flex align-items-start justify-content-between">
-      <div class="brand">
-        <div class="logo">KOEL</div>
-        <div>
-          <h2 class="h5 mb-0" style="color:var(--text-on-brand)">DigiKey Ürün Arama</h2>
-          <div style="color:rgba(255,255,255,0.9); font-size:.95rem">Adet bazlı fiyat kırılımları ve hızlı detay görüntüleme</div>
-        </div>
+    <header class="mb-4">
+      <div class="d-flex align-items-center justify-content-between">
+        <h3 class="mb-0">DigiKey Ürün Arama</h3>
+        <small class="text-muted">Adet bazlı fiyat kırılımlarını vurgular</small>
       </div>
-      <div class="d-flex align-items-center justify-content-end gap-3">
-        
-        <form action="/upload_bom" method="post" enctype="multipart/form-data" class="m-0">
-            <label class="btn btn-outline-light btn-sm d-flex align-items-center gap-2" style="cursor: pointer; border-color: rgba(255,255,255,0.3);">
-                <i class="bi bi-file-earmark-spreadsheet"></i> 
-                <span>BOM Yükle (.xlsx)</span>
-                <input type="file" name="bom_file" accept=".xlsx, .xls" hidden onchange="this.form.submit()">
-            </label>
-        </form>
 
-        <div class="text-end" style="color:rgba(255,255,255,0.85); font-size:.9rem">
-          Tek renk tema • Mobil uyumlu
-          
-          {% if limits and limits.remaining != '---' %}
-            <span class="mx-2">•</span>
-            <span style="background: rgba(255,255,255,0.15); padding: 2px 8px; border-radius: 6px; font-weight: 500;" 
-                  title="Günlük Toplam Limit: {{ limits.daily_limit }}">
-              <i class="bi bi-speedometer2 me-1"></i>API: {{ limits.remaining }}
-            </span>
-          {% endif %}
+      <form class="row g-2 mt-3" action="{{ url_for('search') }}" method="get" role="search">
+        <div class="col-sm-6 col-md-5">
+          <input type="text" name="keyword" class="form-control" placeholder="Anahtar kelime girin (ör. resistor, STM32)" value="{{ request.args.get('keyword','') }}" required>
         </div>
-      </div>
-    </header>
-
-      <form action="{{ url_for('search') }}" method="get" role="search" class="search-card">
-        <div style="flex:1; min-width:220px;">
-          <label class="visually-hidden">Parça numarası</label>
-          <input type="text" name="keyword" class="form-control" placeholder="Parça numarası veya anahtar kelime" value="{{ request.args.get('keyword','') }}" required>
-        </div>
-
-        <div style="width:140px;">
-          <label class="visually-hidden">Adet</label>
+        <div class="col-sm-3 col-md-2">
           <input type="number" min="1" name="quantity" class="form-control" placeholder="Adet (opsiyonel)" value="{{ quantity if quantity is not none else '' }}">
         </div>
-
-        <div>
-          <button type="submit" class="btn btn-search">Ara</button>
+        <div class="col-auto">
+          <button type="submit" class="btn btn-primary">Ara</button>
         </div>
-
         {% if products %}
-          <div style="margin-left:auto;">
-            <a href="{{ url_for('search') }}" class="btn btn-outline-primary" style="border-radius:8px; color:var(--text-on-brand); border-color: rgba(255,255,255,0.12);">Yeni Arama</a>
-          </div>
-        {% endif %}
-
-        {% if error %}
-          <div class="w-100 mt-2">
-            <div class="alert alert-danger mb-0" role="alert" style="background:rgba(255,255,255,0.08); color:var(--text-on-brand); border:1px solid rgba(255,255,255,0.12)">
-              <i class="bi bi-exclamation-triangle-fill me-2"></i><strong>Hata:</strong> {{ error }}
-            </div>
-          </div>
+        <div class="col-auto">
+          <a href="{{ url_for('search') }}" class="btn btn-outline-secondary">Yeni Arama</a>
+        </div>
         {% endif %}
       </form>
 
+      {% if error %}
+        <div class="alert alert-danger mt-3" role="alert"><strong>Hata:</strong> {{ error }}</div>
+      {% endif %}
+    </header>
+
     {% if products is not none and products|length == 0 %}
-      <div class="content-card">
-        <div class="alert alert-warning">Arama için sonuç bulunamadı.</div>
-      </div>
+      <div class="alert alert-warning">Arama için sonuç bulunamadı.</div>
     {% endif %}
 
     {% if products %}
-    <div class="content-card">
-      <div class="table-wrap" style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; font-size: 0.9rem; line-height: 1.5;">
+      <div class="table-wrap">
         <table class="table table-hover align-middle">
           <thead class="table-light">
             <tr>
               <th scope="col">#</th>
-              <th scope="col">Ürün No</th>
-              <th scope="col">Ürün Açıklama</th>
-              <th scope="col">Kategori</th>
-              <th scope="col">Üretici Teslim Süresi</th>
+              <th scope="col">Ürün</th>
+              <th scope="col">Üretici</th>
+              <th scope="col">Üretici Parça No</th>
+              <th scope="col">Birim Fiyat USD</th>
               <th scope="col">Stok</th>
               <!-- Yeni sütun -->
               <th scope="col">En Uygun Kırılım</th>   <!-- YENİ -->
-              <th scope="col">En Uygun Fiyat Kırılımı</th>
+              <th scope="col">Fiyat Kırılımı</th>
               <th scope="col">Durum</th>
               <th scope="col">İşlemler</th>
             </tr>
@@ -238,49 +179,30 @@
               {% set desc = p.get('Description', {}) %}
               {% set mfg = p.get('Manufacturer', {}) %}
               {% set status = p.get('ProductStatus', {}) %}
-              {% set category = p.get('Category', {}) %}
               <tr>
                 <th scope="row">{{ loop.index }}</th>
-                <td>
-                  <div class="fw-semibold product-desc">{{ p.get('ManufacturerProductNumber','-') }}</div>
-                  <div class="small-muted">{{ mfg.get('Name','-') }}</div>
-                </td>
                 <td>
                   <div class="fw-semibold product-desc">{{ desc.get('ProductDescription','-') }}</div>
                   <div class="small-muted">{{ desc.get('DetailedDescription','') }}</div>
                 </td>
-                <td>{{ category.get('Name','-') }}</td>
-                <td>{{ p.get('ManufacturerLeadWeeks','-') }} Hafta</td>
+                <td>{{ mfg.get('Name','-') }}</td>
+                <td>{{ p.get('ManufacturerProductNumber','-') }}</td>
+                <td>{{ p.get('UnitPrice','-') }}</td>
                 <td>{{ p.get('QuantityAvailable','-') }}</td>
 
                 <!-- En Uygun Kırılım hücresi -->
-                <td style="min-width: 140px;">
-                  {% set ladder = p.get('DisplayPricing', []) %}
-                  {% set best_break_qty = p.get('BestMatchedPriceBreak', {}).get('BreakQuantity') %}
-                  
-                  {% if ladder %}
-                    <div class="price-ladder" style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; font-size: 0.9rem; line-height: 1.5;">
-                      {% for item in ladder %} 
-                        
-                        {# EŞLEŞME KONTROLÜ: Eğer bu satırın adeti, seçilen en uygun paketin adetiyle aynıysa #}
-                        {% set is_match = (best_break_qty is not none) and (item.BreakQuantity|int == best_break_qty|int) %}
-
-                        <div class="d-flex justify-content-between align-items-center px-2 py-0 {{ 'fw-bold text-dark rounded' if is_match else 'text-secondary' }}" 
-                             style="{{ 'background-color: rgba(0,0,0,0.05);' if is_match else '' }}">
-                          
-                          <span style="{{ 'color:#000;' if is_match else '' }}">
-                            {{ item.UnitPrice }}
-                          </span>
-                          
-                          <span class="small ms-2" style="font-size: 0.85em; {{ 'color:#333;' if is_match else 'color:#999;' }}">
-                            x {{ item.BreakQuantity }}
-                          </span>
-                        
-                        </div>
-                      {% endfor %}
+                <td>
+                  {% set best = p.get('BestMatchedBreak') %}
+                  {% if best %}
+                    <div class="fw-bold text-dark">
+                      {{ best.BreakQuantity }} adet → {{ best.UnitPrice }} USD
                     </div>
+                    <div class="small-muted">Paket Tipi: {{ best.PackageType }}</div>
+                    {% if best.VariationDigiKeyPN %}
+                      <div class="small-muted">DK PN: {{ best.VariationDigiKeyPN }}</div>
+                    {% endif %}
                   {% else %}
-                    <span class="text-muted small">-</span>
+                    <span class="text-muted">—</span>
                   {% endif %}
                 </td>
 
@@ -290,7 +212,7 @@
                   {% if breaks %}
                     <div>
                       {% for b in breaks %}
-                        <div class="mb-1" style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; font-size: 0.9rem; line-height: 1.5;">
+                        <div class="mb-1">
                           <strong class="text-dark">{{ b.BreakQuantity }} adet</strong>
                           &nbsp;→&nbsp;
                           <span>{{ b.UnitPrice }} USD</span>
@@ -334,7 +256,7 @@
           </div>
         </div>
       </div>
-      
+
       <!-- Client side ürün verisi -->
       <script>
         const PRODUCTS = {{ products|tojson }};
@@ -361,7 +283,6 @@
           html += `<p><strong>Üretici:</strong> ${mfg.Name || '-'}</p>`;
           html += `<p><strong>Üretici Parça No:</strong> ${p.ManufacturerProductNumber || '-'}</p>`;
           html += `<p><strong>Birim Fiyat:</strong> ${p.UnitPrice || '-'} USD</p>`;
-          html += `<p><strong>Üretici Teslim Süresi:</strong> ${p.ManufacturerLeadWeeks || '-'} Hafta</p>`;
           html += `<p><strong>Seri:</strong> ${series.Name || '-'}</p>`;
           html += `<p><strong>Stok (genel):</strong> ${p.QuantityAvailable || '-'}</p>`;
           html += `<p><strong>Durum:</strong> ${(p.ProductStatus && p.ProductStatus.Status) || '-'}</p>`;
